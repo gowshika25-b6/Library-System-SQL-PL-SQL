@@ -1,0 +1,156 @@
+                --Library System
+-- BOOKS.
+CREATE TABLE BOOKS(BOOK_ID NUMBER PRIMARY KEY ,TITLE VARCHAR2(50),AUTHOR VARCHAR2(50));
+
+-- MEMBERS.
+CREATE TABLE MEMBERS(MEMBER_ID NUMBER PRIMARY KEY,NAME VARCHAR2(50));
+
+-- ISSUES.
+CREATE TABLE ISSUES(ISSUE_ID NUMBER,BOOK_ID NUMBER,
+MEMBER_ID NUMBER,ISSUE_DATE DATE ,
+FOREIGN KEY(BOOK_ID) REFERENCES BOOKS(BOOK_ID),
+FOREIGN KEY (MEMBER_ID) REFERENCES MEMBERS(MEMBER_ID));
+
+INSERT INTO BOOKS VALUES (16, 'Hamlet', 'William Shakespeare');
+INSERT INTO BOOKS VALUES (18, 'Ode to the West Wind', 'Percy Bysshe Shelley');
+INSERT INTO BOOKS VALUES (20, 'Ode to a Nightingale', 'John Keats');
+INSERT INTO BOOKS VALUES (22, 'The Inheritance of Loss', 'Kiran Desai');
+INSERT INTO BOOKS VALUES (23, 'Tintern Abbey', 'William Wordsworth');
+
+INSERT INTO MEMBERS VALUES (106, 'Anjali');
+INSERT INTO MEMBERS VALUES (107, 'Rahul');
+INSERT INTO MEMBERS VALUES (108, 'Sneha');
+INSERT INTO MEMBERS VALUES (109, 'Vikram');
+INSERT INTO MEMBERS VALUES (110, 'Priya');
+
+INSERT INTO ISSUES VALUES (2001, 16, 106, DATE '2024-06-10');
+INSERT INTO ISSUES VALUES (2002, 18, 107, DATE '2024-06-12');
+INSERT INTO ISSUES VALUES (2003, 20, 108, DATE '2024-06-15');
+INSERT INTO ISSUES VALUES (2004, 22, 109, DATE '2024-06-18');
+INSERT INTO ISSUES VALUES (2005, 23, 110, DATE '2024-06-20');
+
+                        --SQL
+
+-- 1). View All Books,A librarian wants to see all available books.Write a query to display all records from BOOKS.
+SELECT * FROM BOOKS;
+
+--2) Find Books by Author,User searches for books written by a specific author. Display books where author = 'JOHN KEATS'.
+SELECT * FROM BOOKS 
+WHERE AUTHOR='John Keats';
+
+--3) Total Number of Books,Library admin wants total books count.Count number of books in BOOKS table.
+SELECT COUNT(BOOK_ID) FROM BOOKS;
+
+--4)List All Members,Admin wants to see all registered members.Display all records from MEMBERS.
+SELECT * FROM MEMBERS;
+
+--5)Issued Books Details,Admin wants to see which books are issued.Display all records from ISSUES.
+SELECT * FROM ISSUES;
+
+--6. Books Issued Per Member,Admin wants to know how many books each member borrowed.
+SELECT MEMBER_ID,COUNT(BOOK_ID) FROM ISSUES
+GROUP BY MEMBER_ID;
+
+--7)Book Title with Member Name,Admin wants full issue details. 
+SELECT BOOKS.TITLE,MEMBERS.NAME,ISSUES.ISSUE_ID,ISSUES.BOOK_ID,ISSUES.MEMBER_ID,ISSUES.ISSUE_DATE
+FROM ISSUES 
+JOIN BOOKS ON ISSUES.BOOK_ID=BOOKS.BOOK_ID
+JOIN MEMBERS ON ISSUES.MEMBER_ID=MEMBERS.MEMBER_ID;
+
+--8)Most Issued Book,Library wants to find popular books. Find book_id with highest count in ISSUES.
+SELECT BOOK_ID, COUNT(*) AS TOTAL_ISSUES FROM ISSUES
+GROUP BY BOOK_ID
+ORDER BY TOTAL_ISSUES DESC
+FETCH FIRST 1 ROW ONLY;
+
+                              --PL/SQL
+--9). Check Book Availability,User enters book_id.If book exists, print "Available", else "Not Available".
+DECLARE
+    V_BOOK_ID BOOKS.BOOK_ID%TYPE;
+BEGIN
+    SELECT BOOK_ID INTO V_BOOK_ID FROM BOOKS
+    WHERE BOOK_ID=22;
+    DBMS_OUTPUT.PUT_LINE('AVAILABLE');
+    EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('NOT AVAILABLE');
+END;
+/
+
+--10)Issue a Book,Member borrows a book. Insert record into ISSUES using PL/SQL block.
+
+DECLARE
+    V_ISSUE_ID NUMBER := 3001;
+    V_BOOK_ID NUMBER := 22;
+    V_MEMBER_ID NUMBER := 107;
+BEGIN
+    INSERT INTO ISSUES (ISSUE_ID, BOOK_ID, MEMBER_ID, ISSUE_DATE)
+    VALUES (V_ISSUE_ID, V_BOOK_ID, V_MEMBER_ID, SYSDATE);
+
+    COMMIT;
+
+    DBMS_OUTPUT.PUT_LINE('BOOK ISSUED SUCCESSFULLY');
+END;
+/
+
+--11. Return a Book,Member returns a book. Delete record from ISSUES using PL/SQL.
+DECLARE
+    V_ISSUE_ID NUMBER := 2001;
+BEGIN
+    DELETE FROM ISSUES
+    WHERE ISSUE_ID = V_ISSUE_ID;
+
+    COMMIT;
+
+    DBMS_OUTPUT.PUT_LINE('BOOK RETURNED SUCCESSFULLY');
+END;
+/
+
+--12)Display All Books Using Cursor,Admin wants to display all book titles.Use cursor to print titles.
+BEGIN
+    FOR REC IN(SELECT TITLE FROM BOOKS)LOOP
+    DBMS_OUTPUT.PUT_LINE('TITLE='||REC.TITLE);
+    END LOOP;
+END;
+/
+
+--13). Count Issued Books,Admin wants number of issued books. Use PL/SQL block with COUNT.
+DECLARE
+    V_COUNT NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO V_COUNT
+    FROM ISSUES;
+
+    DBMS_OUTPUT.PUT_LINE('TOTAL ISSUED BOOKS = ' || V_COUNT);
+END;
+/
+--14) Handle Invalid Book ID,User enters wrong book_id. Handle exception and print "Book not found".
+DECLARE
+    V_BOOK_ID BOOKS.BOOK_ID%TYPE;
+BEGIN
+    SELECT BOOK_ID INTO V_BOOK_ID
+    FROM BOOKS
+    WHERE BOOK_ID = 999;  -- invalid id
+
+    DBMS_OUTPUT.PUT_LINE('BOOK FOUND');
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('BOOK NOT FOUND');
+END;
+/
+--15) Fine Calculation,If book is issued for more than 7 days: Print "Fine Applicable", else "No Fine".
+DECLARE
+    V_ISSUE_DATE ISSUES.ISSUE_DATE%TYPE;
+BEGIN
+    SELECT ISSUE_DATE INTO V_ISSUE_DATE
+    FROM ISSUES
+    WHERE ISSUE_ID = 2003;
+
+    IF SYSDATE - V_ISSUE_DATE > 7 THEN
+        DBMS_OUTPUT.PUT_LINE('FINE APPLICABLE');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('NO FINE');
+    END IF;
+END;
+/
